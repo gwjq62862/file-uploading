@@ -53,9 +53,34 @@ const Uploader = () => {
         acceptedFiles.forEach(file => uploadFile(file));
     }, [])
 
-    function uploadFile(file: File) {
-        setFiles(prev=>prev.map(f=>f.file===file?{...f,uploading:true}:f))
+    async function uploadFile(file: File) {
+        setFiles(prev => prev.map(f => f.file === file ? { ...f, uploading: true } : f))
+        try {
 
+            const presignedUrlResponse = await fetch('/api/s3', {
+                method: 'POST',
+
+                body: JSON.stringify({
+                    fileName: file.name,
+                    contentType: file.type,
+                    size: file.size
+                }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+
+            })
+
+            if (!presignedUrlResponse.ok) {
+                showCustomToast("Failed to genrate presigned url")
+                setFiles(prev => prev.map(f => f.file === file ? { ...f, uploading: false, error: true, progress: 0 } : f))
+            }
+            const { presigendUrl, uniqueKey } = await presignedUrlResponse.json()
+        } catch (error) {
+            showCustomToast("Failed to genrate presigned url")
+           console.log(error)
+
+        }
     }
 
     const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
