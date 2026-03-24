@@ -3,20 +3,60 @@ import React, { useCallback, useState } from "react";
 import { UploadCloud, X } from "lucide-react";
 import { FileRejection, useDropzone } from "react-dropzone";
 import { CustomToast } from "./CustomToast";
-
+import Image from "next/image";
+import { v4 as uuidv4 } from 'uuid';
 
 const Uploader = () => {
     const [toast, setToast] = useState({ show: false, message: '' });
-
+    const [files, setFiles] = useState<Array<{
+        id: string,
+        file: File,
+        uploading: boolean,
+        progress: number,
+        key?: string,
+        isDeleting: boolean,
+        error: boolean,
+        objectUrl?: string,
+    }>>([])
     const showCustomToast = (msg: string) => {
         setToast({ show: true, message: msg });
 
         setTimeout(() => setToast({ show: false, message: '' }), 4000);
     };
+
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+        if (bytes < 1024) return `${bytes} Bytes`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+    };
+
+    const removeFile = (fileId: string) => {
+        setFiles(prev => prev.filter(file => file.id !== fileId));
+    };
+
+
     const onDrop = useCallback((acceptedFiles: File[]) => {
-        // Do something with the files
-        console.log(acceptedFiles)
+        if (acceptedFiles.length > 0) {
+            const newFiles = acceptedFiles.map(file => ({
+                id: uuidv4(),
+                file,
+                uploading: true,
+                progress: 0,
+                isDeleting: false,
+                error: false,
+                objectUrl: URL.createObjectURL(file)
+
+            }))
+            setFiles(prev => [...prev, ...newFiles])
+        }
+        acceptedFiles.forEach(file => uploadFile(file));
     }, [])
+
+    function uploadFile(file: File) {
+        setFiles(prev=>prev.map(f=>f.file===file?{...f,uploading:true}:f))
+
+    }
 
     const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
         if (fileRejections.length > 0) {
@@ -52,6 +92,8 @@ const Uploader = () => {
             showCustomToast(finalMessage);
         }
     }, []);
+
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDropRejected, onDrop, maxFiles: 5, maxSize: 10 * 1024 * 1024, accept: { 'image/*': ['.png', '.jpg', '.jpeg'] } })
     return (
         <div className="w-full max-w-xl mx-auto space-y-4">
@@ -88,60 +130,45 @@ const Uploader = () => {
             {/* Uploaded File List UI */}
             <div className="space-y-3">
 
-                {/* File Item */}
-                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-xl">
+                {files.map((file) => (
+                    <div key={file.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-xl">
+                        <div className="flex items-center gap-3">
+                            {/* File Icon */}
+                            <div className="w-10 relative h-10 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                                {file.objectUrl ? (
+                                    <Image
+                                        src={file.objectUrl}
+                                        alt={file.file.name}
+                                        fill
+                                        className="rounded-lg object-cover"
+                                    />
+                                ) : (
+                                    <div className="text-xs text-gray-400">No img</div>
+                                )}
+                            </div>
 
-                    <div className="flex items-center gap-3">
-
-                        {/* File Icon */}
-                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                            📄
+                            {/* File Info */}
+                            <div>
+                                <p className="text-sm font-medium text-gray-800">
+                                    {file.file.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    {formatFileSize(file.file.size)}
+                                </p>
+                            </div>
                         </div>
 
-                        {/* File Info */}
-                        <div>
-                            <p className="text-sm font-medium text-gray-800">
-                                example-file.pdf
-                            </p>
-                            <p className="text-xs text-gray-500">
-                                2.4 MB
-                            </p>
-                        </div>
-
+                        {/* Remove Button - now works for each file */}
+                        <button
+                            onClick={() => removeFile(file.id)}  // ← add this handler
+                            className="p-1 rounded-md hover:bg-red-100 transition"
+                        >
+                            <X className="w-4 h-4 text-red-500" />
+                        </button>
                     </div>
+                ))}
 
-                    {/* Remove Button */}
-                    <button className="p-1 rounded-md hover:bg-red-100 transition">
-                        <X className="w-4 h-4 text-red-500" />
-                    </button>
 
-                </div>
-
-                {/* Another Static File (UI Demo) */}
-                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-xl">
-
-                    <div className="flex items-center gap-3">
-
-                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                            🖼️
-                        </div>
-
-                        <div>
-                            <p className="text-sm font-medium text-gray-800">
-                                profile-image.png
-                            </p>
-                            <p className="text-xs text-gray-500">
-                                1.1 MB
-                            </p>
-                        </div>
-
-                    </div>
-
-                    <button className="p-1 rounded-md hover:bg-red-100 transition">
-                        <X className="w-4 h-4 text-red-500" />
-                    </button>
-
-                </div>
 
             </div>
             {toast.show && (
