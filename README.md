@@ -216,22 +216,8 @@ Important:
 - Bucket/object may not be publicly readable.
 - `fileUrl` host pattern may not match your provider.
 
-## Known Improvement Opportunities
-
-- Move provider-specific URL building to config/env.
-- Add server-side file type/size enforcement beyond client checks.
-- Persist uploaded objects in DB instead of in-memory UI state.
-- Replace static `/api/videos` data with bucket listing or DB data.
-- Add retry/cancel support for large uploads.
 
 ## Version Notes
 
 This project uses **Next.js 16 App Router** conventions (`app/` + Route Handlers). If you upgrade Next.js, verify route handler behavior and deployment/runtime compatibility.
 
----
-
-If you want, I can also add:
-
-1. A `.env.example` file (safe placeholders)
-2. API request/response examples as cURL snippets
-3. A short deployment section for Vercel or your own server
