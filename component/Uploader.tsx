@@ -231,7 +231,7 @@ const Uploader = () => {
               errorMessages.add(`${file.name} is larger than 10MB.`);
               break;
             case "file-invalid-type":
-              errorMessages.add(`${file.name} is not a supported image.`);
+              errorMessages.add(`${file.name} is not a supported file`);
               break;
             case "too-many-files":
               errorMessages.add("Maximum 5 files allowed.");
@@ -251,8 +251,11 @@ const Uploader = () => {
     onDropRejected,
     onDrop,
     maxFiles: 5,
-    maxSize: 10 * 1024 * 1024,
-    accept: { "image/*": [".png", ".jpg", ".jpeg"] },
+    maxSize: 500 * 1024 * 1024,//500mb
+    accept: {
+      "image/*": [".png", ".jpg", ".jpeg"],
+      "video/*": [".mp4", ".webm", ".mov"]
+    },
   });
 
   return (
@@ -287,14 +290,22 @@ const Uploader = () => {
             <div className="flex items-center gap-3">
               <div className="w-10 relative h-10 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
                 {file.objectUrl ? (
-                  <Image
-                    src={file.objectUrl}
-                    alt={file.file.name}
-                    fill
-                    className="rounded-lg object-cover"
-                  />
+                  file.file.type.startsWith("video/") ? (
+                    <video
+                      src={file.objectUrl}
+                      className="w-full h-full object-cover rounded-lg"
+                      muted
+                    />
+                  ) : (
+                    <Image
+                      src={file.objectUrl}
+                      alt={file.file.name}
+                      fill
+                      className="rounded-lg object-cover"
+                    />
+                  )
                 ) : (
-                  <div className="text-xs text-gray-400">No img</div>
+                  <div className="text-xs text-gray-400">No File</div>
                 )}
               </div>
 
