@@ -28,6 +28,13 @@ const Uploader = () => {
     setTimeout(() => setToast({ show: false, message: "" }), 4000);
   };
 
+
+
+
+
+
+
+
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";
     if (bytes < 1024) return `${bytes} Bytes`;
@@ -35,8 +42,49 @@ const Uploader = () => {
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   };
 
-  const removeFile = (fileId: string) => {
-    setFiles((prev) => prev.filter((file) => file.id !== fileId));
+  const removeFile = async (fileId: string) => {
+    try {
+
+      const fileToRemove = files.find((f) => f.id === fileId);
+
+      if (!fileToRemove) {
+        throw new Error("File not found");
+      }
+
+      if (fileToRemove.objectUrl) {
+        URL.revokeObjectURL(fileToRemove.objectUrl);
+      }
+      setFiles((prevFiles) =>
+        prevFiles.map((f) => (f.id === fileId ? { ...f, isDeleting: true } : f))
+      );
+
+
+
+
+
+      const response = await fetch("/api/s3/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: fileToRemove?.key }),
+      });
+
+      if (!response.ok) {
+        showCustomToast("Delete failed");
+        setFiles((prevFiles) =>
+          prevFiles.map((f) =>
+            f.id === fileId ? { ...f, isDeleting: false, error: true } : f
+          )
+        );
+        return;
+      }
+
+      setFiles((prevFiles) =>
+        prevFiles.filter((f) => f.id !== fileId)
+      );
+    } catch (error) {
+      console.error(error);
+      showCustomToast("Delete failed");
+    }
   };
 
   const uploadFile = async (file: File) => {
@@ -86,10 +134,10 @@ const Uploader = () => {
               prev.map((f) =>
                 f.file === file
                   ? {
-                      ...f,
-                      progress: Math.round(progress),
-                      key: uniqueKey,
-                    }
+                    ...f,
+                    progress: Math.round(progress),
+                    key: uniqueKey,
+                  }
                   : f
               )
             );
@@ -102,12 +150,12 @@ const Uploader = () => {
               prev.map((f) =>
                 f.file === file
                   ? {
-                      ...f,
-                      progress: 100,
-                      uploading: false,
-                      error: false,
-                      remoteUrl: fileUrl,
-                    }
+                    ...f,
+                    progress: 100,
+                    uploading: false,
+                    error: false,
+                    remoteUrl: fileUrl,
+                  }
                   : f
               )
             );
